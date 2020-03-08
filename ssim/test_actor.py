@@ -1,5 +1,5 @@
 import unittest
-from actor import Condition, InputModifier, ModificationOperation
+from actor import Condition, InputModifier, ModificationOperation, ResponseNetNode
 
 class TestCondition(unittest.TestCase):
     '''A class used to test the functionality of the Condition helper type'''
@@ -79,6 +79,13 @@ class TestModifier(unittest.TestCase):
 
             self.assertEqual(modifier.mode, ModificationOperation.ADD)
             self.assertLess(modifier.applicant, 1)
+
+class TestResponseNetNode(unittest.TestCase):
+     '''A class used to test the functionality of the core ResponseNetNode type'''
+
+     def test_random(self):
+         node = ResponseNetNode.random([1/6] * 6, 420, [0.25, 0.25, 0.25, 0.25], 69, [0.5, 0.5])
+         self.assertNotEqual(node, None)
 
 if __name__ == '__main__':
     # Run the tests!

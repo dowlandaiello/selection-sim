@@ -1,9 +1,10 @@
 from __future__ import annotations
 from enum import Enum, unique
 from state import Mutation
-from typing import Dict
+from typing import Dict, List
 from numpy.random import choice
 from random import randrange
+from math import floor
 
 class ResponseNet:
     '''
@@ -26,14 +27,76 @@ class ResponseNetNode:
     ----------
     condition : Condition
         The condition who's activation will result in the execution of this node
-    children : [ResponseNetNode]
+    children : List[ResponseNetNode]
         The next nodes in the response net; will be activated according to the 
         generating node
     input_modifier : InputModifier
         A functional component that mutates the incoming data, passing on the
         mutated data to child nodes
     resultant_mutation : Mutation
+        The result of hitting the "end" of the response net
     '''
+
+    def __init__(self, condition: Condition, children: List[ResponseNetNode], input_modifier: InputModifier, resultant_mutation: Mutation):
+        '''
+        Parameters
+        ----------
+        condition : Condition
+            The condition who's activation will result in the execution of this node
+        children : List[ResponseNetNode]
+            The next nodes in the response net; will be activated according to the 
+            generating node
+        input_modifier : InputModifier
+            A functional component that mutates the incoming data, passing on the
+            mutated data to child nodes
+        resultant_mutation : Mutation
+            The result of hitting the "end" of the response net
+        '''
+        self.condition = condition
+        self.children = children
+        self.input_modifier = input_modifier
+        self.resultant_mutation = resultant_mutation
+
+    @staticmethod
+    def random(condition_weights: List[float], max_children: int, input_modifier_weights: [float], max_input_modifier: int, mutation_weights: [float]) -> ResponseNetNode:
+        # Get the number of child nodes that we should generate
+        n_children = floor(randrange(max_children))
+
+        # Generate the new node, with its child nodes, recursively
+        return ResponseNetNode(
+            Condition.random(condition_weights),
+            [ResponseNetNode.random(
+                condition_weights,
+                max_children,
+                input_modifier_weights,
+                max_input_modifier,
+                mutation_weights
+            )] * n_children if n_children > 0 else [],
+            InputModifier.random(input_modifier_weights, max_input_modifier),
+            Mutation.random(mutation_weights)
+        )
+
+    def trigger(self, stimulus: int) -> Optional[int]:
+        '''Begins resolving the state of the reaction node, considering a stimulus
+
+        Parameters
+        ----------
+        stimulus : int
+            Data fed to the reaction node
+
+        Returns
+        -------
+        Optional[int]
+            Any data returned by the node, or its children
+        '''
+
+        # Apply the input modifier to the stimulus
+        stimulus = self.input_modifier.apply(stimulus)
+
+        # Activate any applicable children
+        for i in range(len(self.children)):
+            if self.children[i].condition.is_active(stimulus):
+                return self.children[i].trigger(stimulus) 
 
 @unique
 class Condition(Enum):
@@ -44,7 +107,7 @@ class Condition(Enum):
     -------
     is_active(self, a: int, b: int) -> bool
         Checks whether or not the condition should be active, considering some applicants
-    random(weights: [float]) -> Condition
+    random(weights: List[float]) -> Condition
         Generates a random condition according to a provided list of
         probabilities in the following order: EQ, NE, GE, G, LE, L
     '''
@@ -86,12 +149,12 @@ class Condition(Enum):
             return a < b
 
     @staticmethod
-    def random(weights: [float]) -> Condition:
+    def random(weights: List[float]) -> Condition:
         '''Generates a random condition according to a provided weight table.
 
         Parameters
         ----------
-        weights : [float]
+        weights : List[float]
             The percentage measured as <= 1 doubles assigned to each possible random condition
 
         Returns
@@ -108,7 +171,7 @@ class ModificationOperation(Enum):
 
     Methods
     -------
-    random(weights: [floa]) -> InputModifier
+    random(weights: List[floa]) -> InputModifier
         Generates a random modification operation according to a provided list
         of probabilities in the following order: ADD, SUB, MUL, DIV
     '''
@@ -119,12 +182,12 @@ class ModificationOperation(Enum):
     DIV = 4
 
     @staticmethod
-    def random(weights: [float]) -> ModificationOperation:
+    def random(weights: List[float]) -> ModificationOperation:
         '''Generates a random modification operation according to a provided weight table.
 
         Parameters
         ----------
-        weights : [float]
+        weights : List[float]
             The percentage measured as <= doubles assigned to each possible random input modifier
 
         Returns
@@ -147,7 +210,7 @@ class InputModifier():
 
     Methods
     -------
-    random(weights: [float]) -> InputModifier
+    random(weights: List[float]) -> InputModifier
         Generates a random input modifier according to a provided list of
         probabilities in the following order: ADD, SUB, MUL, DIV
     '''
@@ -166,12 +229,12 @@ class InputModifier():
         self.applicant = modifier_applicant
 
     @staticmethod
-    def random(weights: [float], max_applicant: int) -> InputModifier:
+    def random(weights: List[float], max_applicant: int) -> InputModifier:
         '''Generates a random input modifier according to a provided weight table.
 
         Parameters
         ----------
-        weights : [float]
+        weights : List[float]
             The percentage measured as <= doubles assigned to each possible random input modifier
 
         Returns
