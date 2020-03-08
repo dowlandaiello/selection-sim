@@ -1,5 +1,5 @@
 import unittest
-from actor import Condition
+from actor import Condition, InputModifier, ModificationOperation
 
 class TestCondition(unittest.TestCase):
     '''A class used to test the functionality of the Condition helper type'''
@@ -63,7 +63,22 @@ class TestCondition(unittest.TestCase):
 class TestModifier(unittest.TestCase):
     '''A class used to test the functionality of the InputModifier helper type'''
 
-    
+    def test_init(self):
+        modifier = InputModifier(ModificationOperation.ADD, 69)
+
+        self.assertEqual(modifier.mode, ModificationOperation.ADD)
+        self.assertEqual(modifier.applicant, 69)
+
+    def test_random(self):
+        weights = [1.0, 0.0, 0.0, 0.0]
+
+        # All generated modifiers should be ADD 0
+        for _ in range(100):
+            # Generate a random modifier
+            modifier = InputModifier.random(weights, 1)
+
+            self.assertEqual(modifier.mode, ModificationOperation.ADD)
+            self.assertLess(modifier.applicant, 1)
 
 if __name__ == '__main__':
     # Run the tests!

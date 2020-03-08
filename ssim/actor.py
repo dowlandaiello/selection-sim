@@ -102,15 +102,48 @@ class Condition(Enum):
 
         return Condition(choice([Condition.EQ, Condition.NE, Condition.GE, Condition.G, Condition.LE, Condition.L], 1, p=weights)[0]) 
 
-@unique
-class InputModifier(Enum):
+class ModificationOperation(Enum):
+    '''
+    A class used to represent one of the four arithmetic operations that may be done to an input
+
+    Methods
+    -------
+    random(weights: [floa]) -> InputModifier
+        Generates a random modification operation according to a provided list
+        of probabilities in the following order: ADD, SUB, MUL, DIV
+    '''
+
+    ADD = 1
+    SUB = 2
+    MUL = 3
+    DIV = 4
+
+    @staticmethod
+    def random(weights: [float]) -> ModificationOperation:
+        '''Generates a random modification operation according to a provided weight table.
+
+        Parameters
+        ----------
+        weights : [float]
+            The percentage measured as <= doubles assigned to each possible random input modifier
+
+        Returns
+        -------
+        ModificationOperation the generated modification operation
+        '''
+
+        return ModificationOperation(choice([ModificationOperation.ADD, ModificationOperation.SUB, ModificationOperation.MUL, ModificationOperation.DIV], 1, p=weights)[0])
+
+class InputModifier():
     '''
     A class used to represent one of the four arithmetic operations that may be done to an input
 
     Attributes
     ----------
-        applicant : int
-            The applicant to the operation (e.g. InputModifier(1, 1) => x + 1, InputModifier(3, 1) => x * 3)
+    mode : ModificationOperation
+        The type of modifier to apply to an input
+    applicant : int
+        The applicant to the operation (e.g. InputModifier(1, 1) => x + 1, InputModifier(3, 1) => x * 3)
 
     Methods
     -------
@@ -119,12 +152,7 @@ class InputModifier(Enum):
         probabilities in the following order: ADD, SUB, MUL, DIV
     '''
 
-    ADD = 1
-    SUB = 2
-    MUL = 3
-    DIV = 4
-
-    def __init__(self, modifier_id: int, modifier_applicant: int=1.0):
+    def __init__(self, modifier_type: ModificationOperation, modifier_applicant: int=1):
         '''
         Parameters
         ----------
@@ -134,6 +162,7 @@ class InputModifier(Enum):
             The applicant to the operation (e.g. InputModifier(1, 1) => x + 1, InputModifier(3, 1) => x * 3)
         '''
 
+        self.mode = modifier_type
         self.applicant = modifier_applicant
 
     @staticmethod
@@ -151,7 +180,7 @@ class InputModifier(Enum):
             The randomly generated input modifier
         '''
 
-        return InputModifier(choice([ADD, SUB, MUL, DIV], 1, p=weights)[0], randrange(max_applicant))
+        return InputModifier(ModificationOperation.random(weights), randrange(max_applicant))
 
     def apply(self, i: int) -> int:
         '''Applies the input modifier to a given input.
@@ -167,11 +196,11 @@ class InputModifier(Enum):
             The modified input data
         '''
 
-        if self.value == 1:
+        if self.mode == ModificationOperation.ADD:
             return i + self.applicant
-        elif self.value == 2:
+        elif self.mode == ModificationOperation.SUB:
             return i - self.applicant
-        elif self.value == 3:
+        elif self.mode == ModificationOperation.MUL:
             return i * self.applicant
         else:
             return i / self.applicant
